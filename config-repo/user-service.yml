@@ -16,15 +16,16 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    schemas: user_schema
     baseline-on-migrate: true
 
-#keycloak:
-#  realm: agri-realm
-#  auth-server-url: http://keycloak:9090
-#  resource: user-service-client
-#  bearer-only: true
-#  ssl-required: external
-#  use-resource-role-mappings: true
+keycloak:
+  realm: agri-realm
+  auth-server-url: http://keycloak:9090
+  resource: user-service-client
+  bearer-only: true
+  ssl-required: external
+  use-resource-role-mappings: true
 
 minio:
   url: http://localhost:9000
