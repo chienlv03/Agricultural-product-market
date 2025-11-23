@@ -2,22 +2,67 @@ server:
   port: 8081
 
 spring:
+
+  # 1. Cấu hình Database (PostgreSQL + PostGIS)
   datasource:
     url: jdbc:postgresql://localhost:5432/agri_db?currentSchema=user_schema
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
+
+    # 2. Cấu hình JPA / Hibernate
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+
+  # 3. Cấu hình Flyway (Migration DB)
   flyway:
     enabled: true
     locations: classpath:db/migration
     schemas: user_schema
     baseline-on-migrate: true
+
+  # 4. Cấu hình Redis (Lưu OTP, Cache)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: "" # Để trống nếu chạy local mặc định
+      timeout: 2000ms
+
+    # 5. Cấu hình Kafka (Gửi event OTP sang Notification Service)
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: user-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+    # 6. Cấu hình Security (OAuth2 Resource Server)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # URL để lấy Public Key xác thực Token (Docker thì thay localhost bằng tên service keycloak)
+          jwk-set-uri: http://localhost:9090/realms/nong-san-realm/protocol/openid-connect/certs
+          # Bỏ qua check issuer khi chạy Docker (tránh lỗi mismatch localhost vs ip container)
+          issuer-uri: ""
+
+  # 7. Cấu hình File Upload (MinIO) - Cho phần ảnh vườn, chứng nhận
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 keycloak:
   realm: agri-realm
@@ -32,3 +77,23 @@ minio:
   access-key: admin
   secret-key: 12345678
   bucket: user-images
+
+# 9. Cấu hình Eureka Client (Service Discovery)
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    prefer-ip-address: true # Ưu tiên dùng IP để container tìm thấy nhau
+
+# 10. Cấu hình Actuator (Health check)
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: always
