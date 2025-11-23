@@ -1,9 +1,9 @@
 server:
-  port: 0
+  port: 8081
 
 spring:
   datasource:
-    url: jdbc:postgresql://postgres:5432/agri_db?currentSchema=user_schema
+    url: jdbc:postgresql://localhost:5432/agri_db?currentSchema=user_schema
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
@@ -13,11 +13,21 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
-keycloak:
-  realm: agri-realm
-  auth-server-url: http://keycloak:8080
-  resource: user-service-client
-  bearer-only: true
-  ssl-required: external
-  use-resource-role-mappings: true
+#keycloak:
+#  realm: agri-realm
+#  auth-server-url: http://keycloak:9090
+#  resource: user-service-client
+#  bearer-only: true
+#  ssl-required: external
+#  use-resource-role-mappings: true
+
+minio:
+  url: http://localhost:9000
+  access-key: admin
+  secret-key: 12345678
+  bucket: user-images
