@@ -23,7 +23,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-    schemas: user_schema
+    schemas: user_service
     baseline-on-migrate: true
 
   # 4. Cấu hình Redis (Lưu OTP, Cache)
