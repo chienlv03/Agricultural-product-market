@@ -5,7 +5,7 @@ spring:
 
   # 1. Cấu hình Database (PostgreSQL + PostGIS)
   datasource:
-    url: jdbc:postgis://localhost:5432/agri_db?currentSchema=user_service
+    url: jdbc:postgresql://localhost:5432/agri_db?currentSchema=user_service
     username: admin
     password: admin
     driver-class-name: org.postgresql.Driver
@@ -54,7 +54,7 @@ spring:
       resourceserver:
         jwt:
           # URL để lấy Public Key xác thực Token (Docker thì thay localhost bằng tên service keycloak)
-          jwk-set-uri: http://localhost:9090/realms/nong-san-realm/protocol/openid-connect/certs
+          jwk-set-uri: http://localhost:9090/realms/agri-realm/protocol/openid-connect/certs
           # Bỏ qua check issuer khi chạy Docker (tránh lỗi mismatch localhost vs ip container)
           issuer-uri: ""
 
