@@ -1,0 +1,12 @@
+server:
+  port: 0
+
+zalo:
+  oa-id: YOUR_ZALO_OA_ID
+  app-id: YOUR_APP_ID
+  app-secret: YOUR_APP_SECRET
+
+spring:
+  mail:  # fallback nếu cần
+    host: smtp.gmail.com
+    port: 587

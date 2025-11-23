@@ -1,0 +1,23 @@
+server:
+  port: 0
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/agri_db?currentSchema=user_schema
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.spatial.dialect.postgis.PostgisDialect
+
+keycloak:
+  realm: agri-realm
+  auth-server-url: http://keycloak:8080
+  resource: user-service-client
+  bearer-only: true
+  ssl-required: external
+  use-resource-role-mappings: true

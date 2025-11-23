@@ -1,0 +1,12 @@
+server:
+  port: 8888
+
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/chienlv03/Agricultural-product-market.git
+          search-paths: config-repo
+          default-label: main
+          clone-on-start: true

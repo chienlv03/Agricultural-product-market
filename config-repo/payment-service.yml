@@ -1,0 +1,14 @@
+server:
+  port: 0
+
+vnpay:
+  tmn-code: YOUR_TMN_CODE
+  hash-secret: YOUR_HASH_SECRET
+  return-url: http://localhost:3000/payment/vnpay/callback
+  api-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+
+momo:
+  partner-code: MOMO_PARTNER
+  access-key: YOUR_ACCESS_KEY
+  secret-key: YOUR_SECRET_KEY
+  return-url: http://localhost:3000/payment/momo/callback

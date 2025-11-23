@@ -1,0 +1,13 @@
+server:
+  port: 0
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://admin:admin@mongodb:27017/catalog_db?authSource=admin
+
+minio:
+  url: http://minio:9000
+  access-key: minioadmin
+  secret-key: minioadmin123
+  bucket-name: agri-products
