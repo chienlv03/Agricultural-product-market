@@ -41,3 +41,10 @@ spring:
             - Path=/api/v1/notifications/**
           filters:
             - StripPrefix=1
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
