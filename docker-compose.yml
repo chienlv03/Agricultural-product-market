@@ -23,7 +23,7 @@ services:
       retries: 3
 
   keycloak:
-    container_name: keycloak-agricultural-product-product
+    container_name: keycloak
     image: quay.io/keycloak/keycloak:26.0
     ports:
       - "9090:8080"
@@ -64,14 +64,14 @@ services:
 
   mongodb:
     image: mongo:7.0.5
-    container_name: catalog_mongodb
+    container_name: mongodb
     restart: unless-stopped
     ports:
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: catalog_db
+      MONGO_INITDB_DATABASE: agri_db
     volumes:
       - mongo-data:/data/db
     networks:
@@ -84,7 +84,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: redis-agricultutal-product
+    container_name: redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -116,7 +116,7 @@ services:
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
-    container_name: zookeeper-agricultutal-product
+    container_name: zookeeper
     ports:
       - "2181:2181"
     environment:
@@ -134,7 +134,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    container_name: kafka-agricultutal-product
+    container_name: kafka
     ports:
       - "9092:9092"
       - "29092:29092"
@@ -157,7 +157,7 @@ services:
       retries: 3
 
   kafka-ui:
-    container_name: kafka-ui-agricultutal-product
+    container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
     ports:
       - "8086:8080"
