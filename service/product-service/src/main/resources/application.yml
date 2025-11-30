@@ -1,0 +1,22 @@
+server:
+  port: 8083 # Product Service chạy port 8083
+
+spring:
+  application:
+    name: product-service
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/mongodb # Chạy MongoDB bằng Docker
+      auto-index-creation: true # Tự động tạo index tìm kiếm
+
+  # Cấu hình Security (Copy từ User Service sang)
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost:8080/realms/agri-realm/protocol/openid-connect/certs
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
