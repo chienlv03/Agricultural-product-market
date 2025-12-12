@@ -1,4 +1,4 @@
-package com.chien.agricultural.config;
+package com.chien.agricultural.userConfig;
 
 import io.minio.MinioClient;
 import org.springframework.beans.factory.annotation.Value;

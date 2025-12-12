@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -42,12 +44,14 @@ public class AuthService {
         String keycloakId = identityService.createKeycloakUser(request.getPhoneNumber(), request.getUserRole().name());
 
         // 4. Lưu vào DB PostgreSQL
-        User user = new User();
-        user.setId(keycloakId); // Đồng bộ ID
-        user.setPhone(request.getPhoneNumber());
-        user.setFullName(request.getFullName());
-        user.setUserRole(request.getUserRole());
-        user.setStatus(UserStatus.ACTIVE);
+        User user = User.builder()
+                .id(keycloakId) // Đồng bộ ID từ Keycloak
+                .phone(request.getPhoneNumber())
+                .email(request.getFullName())
+                .userRole(request.getUserRole())
+                .status(UserStatus.ACTIVE)
+                .createdAt(LocalDateTime.now())
+                .build();
 
         userRepository.save(user);
 
@@ -67,7 +71,8 @@ public class AuthService {
         return identityService.exchangeToken(request.getPhoneNumber());
     }
 
-    public void logout(LogoutRequest request) {
-        identityService.logout(request.getRefreshToken());
+    // ...
+    public AuthResponse refreshToken(String refreshToken) {
+        return identityService.refreshToken(refreshToken);
     }
 }

@@ -79,7 +79,14 @@ public class IdentityService {
 
         // 4. Gán Role (Có cơ chế Rollback)
         RealmResource realmResource = keycloakAdmin.realm(realm);
-        String kcRoleName = roleName.equals("SELLER") ? "ROLE_SELLER" : "ROLE_BUYER"; // Map đúng tên role trên Keycloak
+        String kcRoleName;
+        if (roleName.equals("ADMIN")) {
+            kcRoleName = "ROLE_ADMIN";
+        } else if (roleName.equals("SELLER"))  {
+            kcRoleName = "ROLE_SELLER";
+        } else {
+            kcRoleName = "ROLE_BUYER";
+        }
 
         try {
             // Tìm Role trên Keycloak
@@ -147,6 +154,31 @@ public class IdentityService {
             restTemplate.postForObject(logoutUrl, request, Object.class);
         } catch (Exception e) {
             log.error("Lỗi logout trên Keycloak: {}", e.getMessage());
+        }
+    }
+
+    // ... các import cũ ...
+
+    public AuthResponse refreshToken(String refreshToken) {
+        RestTemplate restTemplate = new RestTemplate();
+        String tokenUrl = authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
+        map.add("client_id", clientId);
+        map.add("client_secret", clientSecret);
+        map.add("grant_type", "refresh_token"); // Quan trọng: Đổi grant_type
+        map.add("refresh_token", refreshToken); // Gửi token cũ lên
+
+        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
+
+        try {
+            return restTemplate.postForObject(tokenUrl, request, AuthResponse.class);
+        } catch (Exception e) {
+            // Nếu Refresh token cũng hết hạn hoặc không hợp lệ -> Bắt buộc đăng nhập lại
+            throw new AppException("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", HttpStatus.UNAUTHORIZED);
         }
     }
 }

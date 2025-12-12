@@ -64,17 +64,4 @@ public class SellerProfile {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "certifications", columnDefinition = "jsonb")
     private List<Certification> certifications;
-
-    // --- Trạng thái duyệt ---
-    @Column(name = "verified")
-    private Boolean verified = false;
-
-    @Column(name = "verified_at")
-    private LocalDateTime verifiedAt;
-
-    @Column(name = "verified_by", length = 36)
-    private String verifiedBy; // ID của Admin duyệt
-
-    @Column(name = "rejection_reason", columnDefinition = "TEXT")
-    private String rejectionReason;
 }

@@ -6,17 +6,32 @@ spring:
     name: product-service
   data:
     mongodb:
-      uri: mongodb://localhost:27017/mongodb # Chạy MongoDB bằng Docker
+      uri: mongodb://admin:admin@localhost:27017/mongodb?authSource=admin
       auto-index-creation: true # Tự động tạo index tìm kiếm
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false # Định dạng ngày tháng theo ISO-8601
 
-  # Cấu hình Security (Copy từ User Service sang)
+  # Cấu hình Security
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: http://localhost:8080/realms/agri-realm/protocol/openid-connect/certs
+          # URL để lấy Public Key xác thực Token (Docker thì thay localhost bằng tên service keycloak)
+          jwk-set-uri: http://localhost:9090/realms/agri-realm/protocol/openid-connect/certs
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+
+minio:
+  url: http://localhost:9000
+  access-key: admin
+  secret-key: 12345678
+  bucket: product-files

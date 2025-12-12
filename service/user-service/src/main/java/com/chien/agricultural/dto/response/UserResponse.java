@@ -4,6 +4,8 @@ import com.chien.agricultural.model.UserRole;
 import com.chien.agricultural.model.UserStatus;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Builder
@@ -17,4 +19,5 @@ public class UserResponse {
     private String avatarUrl;
     private UserRole userRole;
     private UserStatus status;
+    private LocalDateTime createdAt;
 }

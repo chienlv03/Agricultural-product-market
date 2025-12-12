@@ -6,9 +6,12 @@ import com.chien.agricultural.dto.request.RegisterRequest;
 import com.chien.agricultural.dto.response.AuthResponse;
 import com.chien.agricultural.dto.response.OtpResponse;
 import com.chien.agricultural.service.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,17 +38,14 @@ public class AuthController {
     // Bước 2a: Đăng ký (Có chọn Role)
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request, HttpServletResponse response) {
-        // 1. Gọi service lấy token (trả về Map hoặc Object chứa access_token, refresh_token)
-        // Lưu ý: Bạn cần ép kiểu về Map hoặc DTO tương ứng từ kết quả của authService.register
         AuthResponse tokenData = authService.register(request);
 
         // 2. Set Cookies
         setTokenCookies(response, tokenData);
 
-        return ResponseEntity.ok(tokenData); // Vẫn trả body để frontend biết thông tin user nếu cần
+        return ResponseEntity.ok(tokenData);
     }
 
-    // Bước 2b: Đăng nhập (Không cần chọn Role)
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request, HttpServletResponse response) {
         AuthResponse tokenData = authService.login(request);
@@ -66,6 +66,43 @@ public class AuthController {
 
         // (Tùy chọn) Gọi thêm logic logout Keycloak nếu cần
         return ResponseEntity.ok("Đăng xuất thành công");
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<Void> refreshToken(HttpServletRequest request, HttpServletResponse response) {
+        // 1. Tìm Refresh Token trong Cookie
+        String refreshToken = null;
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("refreshToken".equals(cookie.getName())) {
+                    refreshToken = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // Nếu không có refresh token -> Báo lỗi 401 để Frontend logout luôn
+        if (refreshToken == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            // 2. Gọi Keycloak lấy token mới
+            AuthResponse newTokenData = authService.refreshToken(refreshToken);
+
+            // 3. QUAN TRỌNG: Set lại Cookie mới vào trình duyệt
+            setTokenCookies(response, newTokenData);
+
+            return ResponseEntity.ok().build();
+        } catch (Exception e) {
+            // Nếu refresh token cũng hết hạn -> Xóa cookie -> Bắt đăng nhập lại
+            ResponseCookie deleteAccess = ResponseCookie.from("accessToken", "").path("/").maxAge(0).build();
+            ResponseCookie deleteRefresh = ResponseCookie.from("refreshToken", "").path("/").maxAge(0).build();
+            response.addHeader(HttpHeaders.SET_COOKIE, deleteAccess.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 
     private void setTokenCookies(HttpServletResponse response, AuthResponse tokenData) {

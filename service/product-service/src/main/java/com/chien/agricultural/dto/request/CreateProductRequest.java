@@ -15,6 +15,7 @@ public class CreateProductRequest {
     private String description;
     private Double price;
     private String unit;
+    private Integer quantity; // Sản lượng dự kiến (VD: 50kg)
     private List<String> images; // URL ảnh (đã upload qua MinIO trước đó)
     private List<String> categoryIds;
     private ProductAttribute attributes; // Object chứa origin, harvestDate...

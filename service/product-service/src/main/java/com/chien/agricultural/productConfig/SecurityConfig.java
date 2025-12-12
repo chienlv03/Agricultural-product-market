@@ -1,11 +1,13 @@
-package com.chien.agricultural.config;
+package com.chien.agricultural.productConfig;
 
+import com.chien.agricultural.converter.KeycloakRoleConverter;
 import com.chien.agricultural.exception.JwtAuthenticationEntryPoint;
 import jakarta.servlet.http.Cookie;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,6 +18,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtTimestampValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
@@ -39,21 +42,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults()) // Sử dụng cấu hình CORS mặc định
-                .csrf(AbstractHttpConfigurer::disable) // Tắt CSRF vì dùng API Stateless
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập công khai các API Auth
-                        .requestMatchers("/api/v1/**").permitAll()
-                        // Các API còn lại bắt buộc phải có Token
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/active").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/products/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categories/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                // Cấu hình Resource Server để đọc JWT từ Keycloak
                 .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.decoder(jwtDecoder()))
+                        .jwt(jwt -> jwt
+                                .decoder(jwtDecoder())
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+                        )
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
 
-                        // --- THÊM DÒNG QUAN TRỌNG NÀY ---
-                        // Bảo Spring: "Đừng tìm header nữa, dùng cái resolver của tôi để tìm trong cookie"
+                        // --- QUAN TRỌNG: THÊM DÒNG NÀY ĐỂ ĐỌC COOKIE ---
                         .bearerTokenResolver(cookieBearerTokenResolver())
                 )
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(jwtAuthenticationEntryPoint));
@@ -61,16 +65,16 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // --- BEAN ĐỌC TOKEN TỪ COOKIE (Copy từ User Service sang) ---
     @Bean
     public BearerTokenResolver cookieBearerTokenResolver() {
         return (request) -> {
-            // 1. Ưu tiên tìm trong Header trước (để Postman vẫn test được dễ dàng)
+            // 1. Ưu tiên Header (cho Postman truyền thống)
             String header = request.getHeader("Authorization");
             if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
                 return header.substring(7);
             }
-
-            // 2. Nếu Header không có, tìm trong Cookie "accessToken"
+            // 2. Tìm trong Cookie (cho Browser/Postman mới)
             Cookie[] cookies = request.getCookies();
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
@@ -79,23 +83,22 @@ public class SecurityConfig {
                     }
                 }
             }
-            return null; // Không tìm thấy token
+            return null;
         };
     }
 
     @Bean
+    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+        converter.setJwtGrantedAuthoritiesConverter(new KeycloakRoleConverter());
+        return converter;
+    }
+
+    @Bean
     public JwtDecoder jwtDecoder() {
-        // 1. Tạo Decoder từ JWK Set URI (để verify chữ ký)
         NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-
-        // 2. Định nghĩa Validator: Chỉ kiểm tra Timestamp (hết hạn chưa)
         OAuth2TokenValidator<Jwt> withTimestamp = new JwtTimestampValidator();
-
-        // (Nếu muốn kiểm tra thêm gì đó thì add vào đây, nhưng KHÔNG add IssuerValidator)
-
-        // 3. Gán Validator mới vào Decoder (Ghi đè Validator mặc định khắt khe của Spring)
         jwtDecoder.setJwtValidator(withTimestamp);
-
         return jwtDecoder;
     }
 
@@ -103,7 +106,7 @@ public class SecurityConfig {
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

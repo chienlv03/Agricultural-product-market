@@ -1,9 +1,11 @@
 package com.chien.agricultural.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.TextIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.Instant;
@@ -14,6 +16,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@Document(collection = "products")
 public class Product {
 
     @Id
@@ -69,11 +72,13 @@ public class Product {
 
     // Trạng thái
     @Indexed
-    private String status; // ACTIVE, DRAFT, HIDDEN
+    private ProductStatus status; // ACTIVE, DRAFT, HIDDEN
     @Field("is_featured")
     private Boolean isFeatured = false;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX", timezone = "UTC")
     private Instant createdAt;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSX", timezone = "UTC")
     private Instant updatedAt;
 }

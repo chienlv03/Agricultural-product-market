@@ -4,5 +4,73 @@ server:
 spring:
   application:
     name: api-gateway
-  config:
-    import: optional:configserver:http://localhost:8888
+
+  cloud:
+    gateway:
+      # 1. Cấu hình CORS (Cho phép Cookie & Frontend)
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "https://localhost:3000"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            exposedHeaders:
+              - "Set-Cookie"           # Quan trọng: để browser nhận cookie mới
+              - "Authorization"        # nếu sau này dùng Bearer
+            maxAge: 3600
+
+      # 2. Cấu hình Routes
+      routes:
+        # --- USER SERVICE (Xử lý cả User và Auth) ---
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/v1/users/**, /api/v1/auth/**
+
+        # --- PRODUCT SERVICE (Xử lý Sản phẩm và Danh mục) ---
+        - id: product-service
+          uri: lb://product-service
+          predicates:
+            - Path=/api/v1/products/**, /api/v1/categories/**
+
+        # --- ORDER SERVICE ---
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/v1/orders/**
+
+        # --- INVENTORY SERVICE ---
+        - id: inventory-service
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/v1/inventory/**
+
+        # --- PAYMENT SERVICE ---
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+
+        # --- NOTIFICATION SERVICE ---
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: DEBUG

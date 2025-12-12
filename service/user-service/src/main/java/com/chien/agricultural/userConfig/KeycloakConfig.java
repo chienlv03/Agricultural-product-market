@@ -1,4 +1,4 @@
-package com.chien.agricultural.config;
+package com.chien.agricultural.userConfig;
 
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;

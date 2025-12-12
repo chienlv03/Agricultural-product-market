@@ -10,6 +10,6 @@ import lombok.Setter;
 public class UserResponse {
     private String id;
     private String fullName;
-    private String avatar;
-
+    private String avatarUrl;
+    private Integer provinceId;
 }

@@ -26,11 +26,6 @@ public class OtpService {
         // 2. Lưu Redis (hết hạn sau 5 phút)
         redisTemplate.opsForValue().set(OTP_PREFIX + phoneNumber, otp, Duration.ofMinutes(5));
 
-        // 3. Gửi sự kiện sang Kafka (Notification Service sẽ nghe)
-        // Format đơn giản: "PHONE|OTP" (Trong thực tế nên dùng JSON Object)
-//        String message = phoneNumber + "|" + otp;
-//        kafkaTemplate.send("notification-otp", message);
-
         // Log tạm để test trên Console nếu chưa chạy Notification Service
         System.out.println("DEBUG OTP for " + phoneNumber + ": " + otp);
 

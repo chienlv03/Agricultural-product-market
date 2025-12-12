@@ -1,0 +1,38 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: inventory-service
+
+  datasource:
+    # Dùng chung DB agri_db nh?ng schema khác ?? tách bi?t d? li?u
+    url: jdbc:postgresql://localhost:5432/agri_db?currentSchema=inventory_service,public
+    username: admin
+    password: admin
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # T?t ddl-auto ?? Flyway toàn quy?n qu?n lý
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # C?u hình Flyway
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    schemas: inventory_service
+    locations: classpath:db/migration
+
+  # Format ngày tháng JSON
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

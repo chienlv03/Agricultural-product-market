@@ -9,6 +9,8 @@ import com.chien.agricultural.model.UserRole;
 import com.chien.agricultural.repository.SellerProfileRepository;
 import com.chien.agricultural.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -74,7 +76,7 @@ public class UserService {
         // 3. Xử lý thông tin Nông dân (SellerProfile)
         if (user.getUserRole() == UserRole.SELLER) {
             SellerProfile profile = sellerProfileRepository.findById(userId).orElse(
-                    SellerProfile.builder().user(user).verified(false).build()
+                    SellerProfile.builder().user(user).build()
             );
 
             if (request.getFarmName() != null) profile.setFarmName(request.getFarmName());
@@ -92,5 +94,22 @@ public class UserService {
         }
 
         return getMyProfile();
+    }
+
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        // 1. Gọi Repo lấy tất cả user KHÔNG PHẢI là ADMIN
+        Page<User> usersPage = userRepository.findAllByUserRoleNot(UserRole.ADMIN, pageable);
+
+        // 2. Map từ Entity User sang DTO UserResponse
+        return usersPage.map(user -> UserResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .phone(user.getPhone())
+                .email(user.getEmail())
+                .avatarUrl(user.getAvatarUrl())
+                .userRole(user.getUserRole())
+                .status(user.getStatus())
+                .createdAt(user.getCreatedAt())
+                .build());
     }
 }
