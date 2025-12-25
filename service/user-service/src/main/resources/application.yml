@@ -26,6 +26,7 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.spatial.dialect.postgis.PostgisDialect
 
   # 3. Cấu hình Flyway (Migration DB)
   flyway:
@@ -41,6 +42,7 @@ spring:
       port: 6379
       password: admin
       timeout: 2000ms
+      database: 0
 
     # 5. Cấu hình Kafka (Gửi event OTP sang Notification Service)
   kafka:

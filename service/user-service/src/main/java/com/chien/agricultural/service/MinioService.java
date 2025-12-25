@@ -48,9 +48,6 @@ public class MinioService {
                             .contentType(file.getContentType())
                             .build());
 
-            // 4. Sinh đường dẫn truy cập (Presigned URL) hoặc đường dẫn công khai
-            // Cách đơn giản nhất cho đồ án: Trả về tên file, Frontend sẽ ghép với URL MinIO
-            // Hoặc trả về Presigned URL có hạn 7 ngày
             return minioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)

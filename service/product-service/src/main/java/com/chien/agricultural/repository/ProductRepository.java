@@ -17,5 +17,5 @@ public interface ProductRepository extends MongoRepository<Product, String> {
     Page<Product> findAllByStatus(ProductStatus status, Pageable pageable);
 
     // Tìm các sản phẩm của một nông dân cụ thể
-    Page<Product> findAllBySeller_Id(String sellerId, Pageable pageable);
+    Page<Product> findAllBySeller_SellerId(String sellerId, Pageable pageable);
 }

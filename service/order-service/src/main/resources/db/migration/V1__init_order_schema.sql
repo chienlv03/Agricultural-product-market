@@ -5,7 +5,7 @@ CREATE TABLE order_service.orders
 (
     id               VARCHAR(50) PRIMARY KEY,
 
-    user_id          VARCHAR(50)    NOT NULL,
+    buyer_id         VARCHAR(50)    NOT NULL,
     seller_id        VARCHAR(50)    NOT NULL,
 
     total_amount     DECIMAL(15, 2) NOT NULL,      -- Tổng tiền hàng
@@ -36,8 +36,9 @@ CREATE TABLE order_service.order_items
     product_image VARCHAR(500),
 
     quantity      INTEGER        NOT NULL,
-    price         DECIMAL(15, 2) NOT NULL  -- Giá tại thời điểm mua
+    price         DECIMAL(15, 2) NOT NULL, -- Giá tại thời điểm mua
+    unit          VARCHAR(20)    NOT NULL  -- Đơn vị tính
 );
 
-CREATE INDEX idx_orders_user_id ON order_service.orders (user_id);
+CREATE INDEX idx_orders_user_id ON order_service.orders (buyer_id);
 CREATE INDEX idx_orders_seller_id ON order_service.orders (seller_id);

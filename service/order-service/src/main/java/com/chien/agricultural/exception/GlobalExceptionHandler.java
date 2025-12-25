@@ -1,33 +1,25 @@
 package com.chien.agricultural.exception;
 
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException; // <--- SỬA LẠI IMPORT NÀY
+import org.springframework.security.core.AuthenticationException; // <--- THÊM IMPORT NÀY
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Log4j2
 public class GlobalExceptionHandler {
 
-    // 1. Bắt lỗi RuntimeException (Ví dụ: OTP sai, User đã tồn tại...)
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Object> handleRuntimeException(RuntimeException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Bad Request");
-        body.put("message", ex.getMessage()); // Lấy message bạn throw bên Service
-
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-
-    // 2. Bắt lỗi Validate dữ liệu (@Valid, @NotNull...)
+    // 1. Bắt lỗi Validate dữ liệu (@Valid, @NotNull...)
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -37,50 +29,59 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Validation Error");
-        body.put("message", errors);
-
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+        return buildResponse(HttpStatus.BAD_REQUEST, "Validation Error", errors);
     }
 
-    // Thêm vào GlobalExceptionHandler
+    // 2. Bắt lỗi Custom App Exception
     @ExceptionHandler(AppException.class)
     public ResponseEntity<Object> handleAppException(AppException ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", ex.getStatus().value());
-        body.put("error", ex.getStatus().getReasonPhrase());
-        body.put("message", ex.getMessage());
-
-        return new ResponseEntity<>(body, ex.getStatus());
+        return buildResponse(ex.getStatus(), ex.getStatus().getReasonPhrase(), ex.getMessage());
     }
 
-    // 3. Bắt tất cả các lỗi còn lại (Lỗi hệ thống, NullPointer, DB chết...)
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Object> handleAllExceptions(Exception ex) {
-        // Log lỗi ra console để dev sửa
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-        body.put("error", "Internal Server Error: " + ex.getClass().getSimpleName());
-        body.put("message", "Đã có lỗi xảy ra phía máy chủ. Vui lòng liên hệ Admin.");
-        // Không trả ex.getMessage() ở đây để tránh lộ thông tin nhạy cảm
-
-        return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    // 3. Bắt lỗi 401 Unauthorized (QUAN TRỌNG CHO REFRESH TOKEN)
+    // Lỗi này xảy ra khi Token hết hạn, Token đểu, hoặc chưa đăng nhập
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Object> handleAuthenticationException(AuthenticationException ex) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", "Xác thực thất bại. Vui lòng đăng nhập lại.");
     }
 
+    // 4. Bắt lỗi 403 Forbidden (QUAN TRỌNG VỚI ROLE)
+    // Lỗi này xảy ra khi user đăng nhập rồi nhưng không đủ quyền (VD: User thường đòi sửa Seller)
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Object> handleAccessDeniedException(AccessDeniedException ex) {
+        return buildResponse(HttpStatus.FORBIDDEN, "Forbidden", "Bạn không có quyền thực hiện hành động này.");
+    }
+
+    // 5. Bắt lỗi 404 (API không tồn tại - Fix lỗi NoResourceFoundException bạn gặp lúc nãy)
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Object> handleNoResourceFoundException(NoResourceFoundException ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, "Not Found", "Đường dẫn API không tồn tại.");
+    }
+
+    // 6. Bắt lỗi RuntimeException chung chung
+    // Lưu ý: Đặt cái này sau các lỗi Security để tránh việc nó nuốt mất lỗi Security
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Object> handleRuntimeException(RuntimeException ex) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
+    }
+
+    // 7. Bắt tất cả các lỗi còn lại (Lỗi hệ thống 500)
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Object> handleAllExceptions(Exception ex) {
+        // Nên dùng Logger thay vì System.out
+        log.error("Lỗi hệ thống không mong muốn: ", ex);
+
+        // Trả về thông báo chung chung để bảo mật
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "Lỗi hệ thống không mong muốn: " + ex.getMessage());
+    }
+
+    // Hàm Utility để build response cho gọn code
+    private ResponseEntity<Object> buildResponse(HttpStatus status, String error, Object message) {
         Map<String, Object> body = new HashMap<>();
         body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.FORBIDDEN.value()); // 403
-        body.put("error", "Forbidden");
-        body.put("message", "Bạn không có quyền thực hiện hành động này.");
-
-        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+        body.put("status", status.value());
+        body.put("error", error);
+        body.put("message", message);
+        return new ResponseEntity<>(body, status);
     }
 }

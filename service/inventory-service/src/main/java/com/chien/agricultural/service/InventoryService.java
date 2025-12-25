@@ -1,15 +1,23 @@
 package com.chien.agricultural.service;
 
+import com.chien.agricultural.dto.DeductStockRequest;
+import com.chien.agricultural.dto.InventoryStockResponse;
 import com.chien.agricultural.entity.Inventory;
+import com.chien.agricultural.exception.AppException;
 import com.chien.agricultural.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
@@ -42,33 +50,50 @@ public class InventoryService {
     }
 
     // 3. Trừ kho (Giữ hàng - Reserve) - Gọi khi khách bấm "Đặt hàng"
-    @Transactional
-    public void deductStock(String productId, Integer quantity) {
-        Inventory inventory = inventoryRepository.findByProductId(productId)
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại trong kho"));
+    @Transactional(rollbackFor = Exception.class)
+    public void deductStockBatch(List<DeductStockRequest> requests) {
+        log.info("Bắt đầu trừ kho cho {} sản phẩm", requests.size());
 
-        int availableStock = inventory.getQuantity() - inventory.getReservedQuantity();
+        for (DeductStockRequest req : requests) {
+            // Tìm kho theo ProductID (Khóa dòng để tránh tranh chấp)
+            Inventory inventory = inventoryRepository.findByProductIdLocked(req.getProductId())
+                    .orElseThrow(() -> new AppException("Không tìm thấy thông tin kho cho sản phẩm: " + req.getProductId(), HttpStatus.NOT_FOUND));
 
-        if (availableStock < quantity) {
-            throw new RuntimeException("Hết hàng! Chỉ còn " + availableStock + " sản phẩm.");
+            // Kiểm tra số lượng
+            if (inventory.getQuantity() < req.getQuantity()) {
+                throw new AppException("Sản phẩm (ID: " + req.getProductId() + ") không đủ số lượng tồn kho.", HttpStatus.BAD_REQUEST);
+            }
+
+            // Trừ kho
+            inventory.setQuantity(inventory.getQuantity() - req.getQuantity());
+            inventoryRepository.save(inventory);
         }
-
-        // Tăng lượng hàng đã giữ lên
-        inventory.setReservedQuantity(inventory.getReservedQuantity() + quantity);
-        inventory.setUpdatedAt(Instant.now());
-        inventoryRepository.save(inventory);
     }
 
     // 4. Hoàn kho (Restore) - Gọi khi hủy đơn
     @Transactional
-    public void restoreStock(String productId, Integer quantity) {
-        Inventory inventory = inventoryRepository.findByProductId(productId)
-                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
-
-        inventory.setReservedQuantity(inventory.getReservedQuantity() - quantity);
-        if (inventory.getReservedQuantity() < 0) inventory.setReservedQuantity(0);
-        inventory.setUpdatedAt(Instant.now());
-
-        inventoryRepository.save(inventory);
+    public void restoreStock(List<DeductStockRequest> items) {
+        for (DeductStockRequest item : items) {
+            inventoryRepository.restoreStock(item.getProductId(), item.getQuantity());
+        }
     }
+
+    @Transactional(readOnly = true)
+    public List<InventoryStockResponse> findByProductIdIn(List<String> productIds) {
+
+        List<Inventory> inventories =
+                inventoryRepository.findByProductIdIn(productIds);
+
+        return inventories.stream()
+                .map(inv -> InventoryStockResponse.builder()
+                        .productId(inv.getProductId())
+                        .availableQuantity(
+                                inv.getQuantity() - inv.getReservedQuantity()
+                        )
+                        .build())
+                .toList();
+    }
+
+
+
 }

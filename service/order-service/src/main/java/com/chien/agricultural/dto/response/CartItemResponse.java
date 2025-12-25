@@ -18,4 +18,5 @@ public class CartItemResponse {
     private String productImage;
     private String sellerId;
     private String sellerName;
+    private Integer availableQuantity;
 }

@@ -31,7 +31,7 @@ spring:
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/v1/users/**, /api/v1/auth/**
+            - Path=/api/v1/users/**, /api/v1/auth/**, /api/v1/sellers/**, /api/v1/addresses/**
 
         # --- PRODUCT SERVICE (Xử lý Sản phẩm và Danh mục) ---
         - id: product-service
@@ -43,7 +43,7 @@ spring:
         - id: order-service
           uri: lb://order-service
           predicates:
-            - Path=/api/v1/orders/**
+            - Path=/api/v1/orders/**, /api/v1/cart/**, /api/v1/checkout/**
 
         # --- INVENTORY SERVICE ---
         - id: inventory-service

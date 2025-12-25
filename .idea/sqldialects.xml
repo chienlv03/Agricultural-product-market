@@ -2,6 +2,9 @@
 <project version="4">
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/init-db.sql" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/service/inventory-service/src/main/java/com/chien/agricultural/repository/InventoryRepository.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/service/user-service/src/main/java/com/chien/agricultural/repository/AddressRepository.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/service/user-service/src/main/java/com/chien/agricultural/repository/SellerProfileRepository.java" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/service/user-service/src/main/resources/db/migration/V1__create_table.sql" dialect="PostgreSQL" />
   </component>
 </project>

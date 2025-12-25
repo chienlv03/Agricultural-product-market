@@ -53,6 +53,7 @@ public class Product {
     @Field("original_price")
     private Double originalPrice;
     private String unit;
+    private Integer availableQuantity;
 
     // Biến thể (1kg, 2kg...)
     private List<ProductVariant> variants;
@@ -72,7 +73,7 @@ public class Product {
 
     // Trạng thái
     @Indexed
-    private ProductStatus status; // ACTIVE, DRAFT, HIDDEN
+    private ProductStatus status;
     @Field("is_featured")
     private Boolean isFeatured = false;
 

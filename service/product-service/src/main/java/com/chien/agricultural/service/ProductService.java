@@ -5,13 +5,17 @@ import com.chien.agricultural.client.UserClient;
 import com.chien.agricultural.dto.request.CreateProductRequest;
 import com.chien.agricultural.dto.request.InitStockRequest;
 import com.chien.agricultural.dto.request.UpdateProductRequest;
+import com.chien.agricultural.dto.response.InventoryStockResponse;
+import com.chien.agricultural.dto.response.ProductResponse;
 import com.chien.agricultural.dto.response.UserResponse;
 import com.chien.agricultural.exception.AppException;
+import com.chien.agricultural.mapper.ProductMapper;
 import com.chien.agricultural.model.Product;
 import com.chien.agricultural.model.ProductStatus;
 import com.chien.agricultural.model.SellerInfo;
 import com.chien.agricultural.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -22,15 +26,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.text.Normalizer;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Log4j2
 public class ProductService {
 
     private final ProductRepository productRepository;
@@ -44,7 +46,7 @@ public class ProductService {
                                  List<MultipartFile> videos) {
 
         // 1. Lấy thông tin người bán (Seller)
-        UserResponse sellerInfo = userClient.getMyProfile();
+        SellerInfo sellerInfo = userClient.getSellerById();
 
         // 2. Xử lý Upload Ảnh (Images)
         List<String> imageUrls = new ArrayList<>();
@@ -82,15 +84,9 @@ public class ProductService {
                 .createdAt(Instant.now())
                 .build();
 
-        // 5. Đổ dữ liệu người bán (Denormalization)
-        SellerInfo embeddedSeller = new SellerInfo();
-        embeddedSeller.setId(sellerInfo.getId());
-        embeddedSeller.setName(sellerInfo.getFullName());
-        embeddedSeller.setAvatar(sellerInfo.getAvatarUrl());
-        // Map thêm province nếu bên UserResponse có trả về
-        product.setSeller(embeddedSeller);
+        product.setSeller(sellerInfo);
 
-        Product savedProduct =  productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
 
         try {
             InitStockRequest stockRequest = InitStockRequest.builder()
@@ -124,7 +120,33 @@ public class ProductService {
 
     // 2. Lấy danh sách sản phẩm (Có phân trang & Sắp xếp)
     public Page<Product> findAllByStatus(ProductStatus productStatus, Pageable pageable) {
-        return productRepository.findAllByStatus(productStatus, pageable);
+        Page<Product> product = productRepository.findAllByStatus(productStatus, pageable);
+        // Assuming `getStock` is updated to accept a List<String>
+        List<String> productIds = product.getContent().stream()
+                .map(Product::getId)
+                .toList();
+
+        List<InventoryStockResponse> stockList = new ArrayList<>();
+        try {
+            if (!productIds.isEmpty()) {
+                stockList = inventoryClient.getBatchStock(productIds);
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi gọi Inventory Service", e);
+            // Nếu lỗi thì coi như stockList rỗng, mặc định quantity = 0
+        }
+
+        Map<String, Integer> stockMap = stockList.stream()
+                .collect(Collectors.toMap(
+                        InventoryStockResponse::getProductId,
+                        InventoryStockResponse::getAvailableQuantity,
+                        (existing, replacement) -> existing // Nếu trùng key thì giữ cái cũ
+                ));
+
+        return product.map(p -> {
+            p.setAvailableQuantity(stockMap.getOrDefault(p.getId(), 0));
+            return p;
+        });
     }
 
     // 3. Lấy chi tiết sản phẩm theo ID
@@ -143,7 +165,7 @@ public class ProductService {
     public Page<Product> getMyProducts(Pageable pageable) {
         // Lấy ID người dùng hiện tại từ Token
         String currentUserId = SecurityContextHolder.getContext().getAuthentication().getName();
-        return productRepository.findAllBySeller_Id(currentUserId, pageable);
+        return productRepository.findAllBySeller_SellerId(currentUserId, pageable);
     }
 
     // 1. Lấy sản phẩm cho Trang chủ (Mặc định chỉ lấy ACTIVE)
@@ -179,7 +201,7 @@ public class ProductService {
 
         // 2. Kiểm tra quyền (Chỉ chủ sở hữu mới được sửa)
         String currentUserId = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
-        if (!product.getSeller().getId().equals(currentUserId)) {
+        if (!product.getSeller().getSellerId().equals(currentUserId)) {
             // (Mở rộng: Admin vẫn được quyền sửa)
             throw new AppException("Bạn không có quyền sửa sản phẩm này", HttpStatus.FORBIDDEN);
         }
@@ -221,15 +243,43 @@ public class ProductService {
             product.setImages(finalImages);
             // Update thumbnail bằng ảnh đầu tiên
             if (!finalImages.isEmpty()) {
-                product.setThumbnail(finalImages.get(0));
+                product.setThumbnail(finalImages.getFirst());
             }
         }
 
         product.setUpdatedAt(Instant.now());
 
-        // Nếu sửa thông tin quan trọng, có thể reset trạng thái về PENDING để duyệt lại
-        // product.setStatus("PENDING");
-
         return productRepository.save(product);
     }
+
+    public List<ProductResponse> getProductsByIds(List<String> ids) {
+
+        List<Product> products = productRepository.findAllById(ids);
+
+        List<InventoryStockResponse> stockList = new ArrayList<>();
+        try {
+            if (!products.isEmpty()) {
+                stockList = inventoryClient.getBatchStock(ids);
+            }
+        } catch (Exception e) {
+            log.error("Lỗi khi gọi Inventory Service", e);
+        }
+
+        Map<String, Integer> stockMap = stockList.stream()
+                .collect(Collectors.toMap(
+                        InventoryStockResponse::getProductId,
+                        InventoryStockResponse::getAvailableQuantity,
+                        (existing, replacement) -> existing
+                ));
+
+        return products.stream()
+                .map(product ->
+                        ProductMapper.toResponse(
+                                product,
+                                stockMap.getOrDefault(product.getId(), 0)
+                        )
+                )
+                .toList();
+    }
+
 }

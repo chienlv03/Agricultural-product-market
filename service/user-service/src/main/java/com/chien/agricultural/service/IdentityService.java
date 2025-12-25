@@ -157,8 +157,6 @@ public class IdentityService {
         }
     }
 
-    // ... các import cũ ...
-
     public AuthResponse refreshToken(String refreshToken) {
         RestTemplate restTemplate = new RestTemplate();
         String tokenUrl = authServerUrl + "/realms/" + realm + "/protocol/openid-connect/token";
@@ -179,6 +177,15 @@ public class IdentityService {
         } catch (Exception e) {
             // Nếu Refresh token cũng hết hạn hoặc không hợp lệ -> Bắt buộc đăng nhập lại
             throw new AppException("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại", HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+    public void deleteKeycloakUser(String userId) {
+        try {
+            keycloakAdmin.realm(realm).users().get(userId).remove();
+            log.info("Deleted Keycloak user successfully, userId={}", userId);
+        } catch (Exception e) {
+            log.error("Lỗi xóa user Keycloak với ID {}: {}", userId, e.getMessage());
         }
     }
 }

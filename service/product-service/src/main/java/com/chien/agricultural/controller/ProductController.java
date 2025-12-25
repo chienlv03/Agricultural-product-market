@@ -2,6 +2,7 @@ package com.chien.agricultural.controller;
 
 import com.chien.agricultural.dto.request.CreateProductRequest;
 import com.chien.agricultural.dto.request.UpdateProductRequest;
+import com.chien.agricultural.dto.response.ProductResponse;
 import com.chien.agricultural.model.Product;
 import com.chien.agricultural.model.ProductStatus;
 import com.chien.agricultural.service.ProductService;
@@ -98,5 +99,10 @@ public class ProductController {
             @RequestPart(value = "images", required = false) List<MultipartFile> newImages
     ) {
         return ResponseEntity.ok(productService.updateProduct(id, request, newImages));
+    }
+
+    @GetMapping("/by-ids")
+    public ResponseEntity<List<ProductResponse>> getProductsByIds(@RequestParam List<String> ids) {
+        return ResponseEntity.ok(productService.getProductsByIds(ids));
     }
 }

@@ -22,7 +22,7 @@ create table user_service.users
 -- 2. Bảng seller_profiles
 create table user_service.seller_profiles
 (
-    user_id          varchar(36) primary key references user_service.users (id),
+    seller_id          varchar(36) primary key references user_service.users (id),
 
     -- KYC (Định danh)
     id_card_front    text,
@@ -55,7 +55,7 @@ CREATE INDEX idx_seller_location ON user_service.seller_profiles USING GIST (loc
 -- 3. Bảng addresses
 create table user_service.addresses
 (
-    id             uuid primary key,
+    id             varchar(36) primary key,
     user_id        varchar(36) references user_service.users (id),
     recipient_name varchar(100),
     phone          varchar(15),

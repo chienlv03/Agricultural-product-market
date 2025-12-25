@@ -2,10 +2,15 @@ package com.chien.agricultural.controller;
 
 import com.chien.agricultural.dto.DeductStockRequest;
 import com.chien.agricultural.dto.InitStockRequest;
+import com.chien.agricultural.dto.InventoryStockResponse;
+import com.chien.agricultural.entity.Inventory;
 import com.chien.agricultural.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/inventory")
@@ -22,17 +27,24 @@ public class InventoryController {
     }
 
     // API 2: Trừ kho (Order Service gọi sang)
-    @PostMapping("/deduct")
-    public ResponseEntity<Void> deductStock(@RequestBody DeductStockRequest request) {
-        inventoryService.deductStock(request.getProductId(), request.getQuantity());
+    @PostMapping("/deduct-batch")
+    public ResponseEntity<Void> deductStockBatch(@RequestBody List<DeductStockRequest> requests) {
+        inventoryService.deductStockBatch(requests);
         return ResponseEntity.ok().build();
     }
 
-    // API 3: Check tồn kho (Frontend gọi để hiện: "Còn 5kg")
-    @GetMapping("/{productId}")
-    public ResponseEntity<Integer> getStock(@PathVariable String productId) {
-        // Trả về số lượng khả dụng
-        // Bạn tự thêm hàm getAvailableStock trong Service nhé (quantity - reserved)
-        return ResponseEntity.ok(0); // Demo
+    @PutMapping("/restore")
+    public ResponseEntity<Void> restoreStock(@RequestBody List<DeductStockRequest> items) {
+        inventoryService.restoreStock(items);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/batch-stock")
+    public ResponseEntity<List<InventoryStockResponse>> getBatchStock(@RequestParam List<String> productIds) {
+
+        List<InventoryStockResponse> response =
+                inventoryService.findByProductIdIn(productIds);
+
+        return ResponseEntity.ok(response);
     }
 }

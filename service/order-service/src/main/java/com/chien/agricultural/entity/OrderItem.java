@@ -1,5 +1,6 @@
 package com.chien.agricultural.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
@@ -19,6 +20,7 @@ public class OrderItem {
 
     @ManyToOne
     @JoinColumn(name = "order_id")
+    @JsonIgnore
     private Order order;
 
     private String productId;
@@ -26,4 +28,5 @@ public class OrderItem {
     private String productImage;
     private Integer quantity;
     private BigDecimal price;
+    private String unit;
 }

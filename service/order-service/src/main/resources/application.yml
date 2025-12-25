@@ -29,9 +29,17 @@ spring:
 
   data:
     redis:
-      database: 1
+      database: 0
       host: localhost
       port: 6379
+      password: admin
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # URL để lấy Public Key xác thực Token (Docker thì thay localhost bằng tên service keycloak)
+          jwk-set-uri: http://localhost:9090/realms/agri-realm/protocol/openid-connect/certs
 
 eureka:
   client:

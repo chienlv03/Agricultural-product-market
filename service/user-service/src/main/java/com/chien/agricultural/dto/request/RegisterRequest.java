@@ -11,6 +11,5 @@ import lombok.Setter;
 public class RegisterRequest {
     private String phoneNumber;
     private String otpCode;
-    private String fullName;
     private UserRole userRole; // BUYER hoặc SELLER
 }

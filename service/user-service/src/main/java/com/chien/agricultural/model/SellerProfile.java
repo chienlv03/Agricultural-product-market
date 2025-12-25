@@ -17,16 +17,18 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SellerProfile {
 
+    @EqualsAndHashCode.Include
     @Id
-    @Column(name = "user_id")
-    private String userId; // PK trùng với User ID
+    @Column(name = "seller_id")
+    private String sellerId; // PK trùng với User ID
 
     // Kỹ thuật Shared Primary Key: MapsId sẽ lấy ID của user gán vào userId ở trên
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "seller_id")
     @JsonIgnore
     private User user;
 

@@ -56,15 +56,8 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletResponse response) {
-        // Xóa Cookie bằng cách set maxAge = 0
-        ResponseCookie deleteAccess = ResponseCookie.from("accessToken", "").path("/").maxAge(0).build();
-        ResponseCookie deleteRefresh = ResponseCookie.from("refreshToken", "").path("/").maxAge(0).build();
-
-        response.addHeader(HttpHeaders.SET_COOKIE, deleteAccess.toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, deleteRefresh.toString());
-
-        // (Tùy chọn) Gọi thêm logic logout Keycloak nếu cần
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logout(request, response);
         return ResponseEntity.ok("Đăng xuất thành công");
     }
 
